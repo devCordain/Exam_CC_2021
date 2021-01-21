@@ -1,11 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 
 namespace MovieLibrary.Controllers {
 
@@ -18,6 +13,7 @@ namespace MovieLibrary.Controllers {
         public MovieController(IListSource listSource) {
             this.listSource = listSource;
         }
+
         [HttpGet]
         [Route("/toplist")]
         public IEnumerable<string> Toplist(bool ascendingByRating = true)
