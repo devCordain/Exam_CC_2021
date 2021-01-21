@@ -5,57 +5,38 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
-namespace MovieLibrary.Controllers
-{
-    public class Movie
-    {
-        public string id { get; set; }
-        public string title { get; set; }
-        public string rated { get; set; }
-    }
+namespace MovieLibrary.Controllers {
 
     [ApiController]
     [Route("[controller]")]
     public class MovieController
     {
-        static HttpClient client = new HttpClient();
+        private readonly IListSource listSource;
 
+        public MovieController(IListSource listSource) {
+            this.listSource = listSource;
+        }
         [HttpGet]
         [Route("/toplist")]
-        public IEnumerable<string> Toplist(bool asc = true)
+        public IEnumerable<string> Toplist(bool ascendingByRating = true)
         {
-            List<string> res = new List<string>();
-            var r = client.GetAsync("https://ithstenta2020.s3.eu-north-1.amazonaws.com/topp100.json").Result;
-            var ml = JsonSerializer.Deserialize<List<Movie>>(new StreamReader(r.Content.ReadAsStream()).ReadToEnd());
-            //Sort ml
-            if (asc)
-            {
-                ml.OrderBy(e => e.rated);
+            var movies = listSource.GetList();
+            if(movies is null) return new List<string>() { "Could not retrieve movies from source" };
+            if (ascendingByRating) {
+                return movies.OrderBy(movie => double.Parse(movie.rated)).ToList().Select(movie => movie.title);
             }
-            else
-            {
-                ml.OrderByDescending(e => e.rated);
-            }
-            foreach (var m in ml) {
-                res.Add(m.title);
-            }
-            //result.Add(new StreamReader(response.Content.ReadAsStream()).ReadToEnd());
-            return res;
+            else {
+                return movies.OrderByDescending(movie => double.Parse(movie.rated)).ToList().Select(movie => movie.title);
+            } 
         }
         
         [HttpGet]
         [Route("/movie")]
         public Movie GetMovieById(string id) {
-            var r = client.GetAsync("https://ithstenta2020.s3.eu-north-1.amazonaws.com/topp100.json").Result;
-            var ml = JsonSerializer.Deserialize<List<Movie>>(new StreamReader(r.Content.ReadAsStream()).ReadToEnd());
-            foreach (var m in ml) {
-                if (m.id.Equals((id)))
-                {
-                    return m; //Found it!
-                }
-            }
-            return null;
+            var movies = listSource.GetList();
+            return movies.FirstOrDefault(movie => movie.id == id) ?? null;
         }
     }
 }
